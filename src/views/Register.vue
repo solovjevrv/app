@@ -77,7 +77,7 @@ export default {
     onSubmit() {
       this.$store.dispatch(actionTypes.register, this.user).then((user) => {
         console.log('New user', user);
-        this.$router.push({name: 'home'});
+        this.$router.push({name: 'globalFeed'});
       });
     },
   },

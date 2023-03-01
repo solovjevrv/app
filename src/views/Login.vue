@@ -67,7 +67,7 @@ export default {
   methods: {
     onSubmit() {
       this.$store.dispatch(actionTypes.login, this.user).then(() => {
-        this.$router.push({name: 'home'});
+        this.$router.push({name: 'globalFeed'});
       });
     },
   },
