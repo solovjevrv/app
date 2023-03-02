@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div v-if="isLoading">Loading...</div>
-    <div v-if="error">Something bad happend</div>
+    <McvLoading v-if="isLoading"></McvLoading>
+    <McvErrorMessage v-if="error"></McvErrorMessage>
     <div v-if="feed">
       <div
         class="article-preview"
@@ -35,42 +35,47 @@
           <h1>{{ article.title }}</h1>
           <p>{{ article.description }}</p>
           <span>Read more...</span>
-          TAG LIST
+          <ul class="tag-list">
+            <li
+              class="tag-default tag-pill tag-outline"
+              v-for="tag in article.tagList"
+              :key="tag"
+            >
+              {{ tag }}
+            </li>
+          </ul>
         </router-link>
       </div>
       <McvPagination
-        :total="total"
+        :total="feed.articlesCount"
         :limit="limit"
         :current-page="currentPage"
-        :url="url"
-      ></McvPagination
-      >{{ pages }}
+        :url="baseUrl"
+      ></McvPagination>
     </div>
   </div>
 </template>
 
 <script>
+import McvPagination from '@/components/Pagination.vue';
+import McvLoading from '@/components/Loading.vue';
+import McvErrorMessage from '@/components/ErrorMessage.vue';
 import {actionTypes} from '@/store/modules/feed';
 import {mapState} from 'vuex';
-import McvPagination from '@/components/Pagination.vue';
+import {limit} from '@/helpers/variables';
+import {stringify, parseUrl} from 'query-string';
 export default {
   name: 'McvFeed',
+  components: {
+    McvPagination,
+    McvLoading,
+    McvErrorMessage,
+  },
   props: {
     apiUrl: {
       type: String,
       required: true,
     },
-  },
-  components: {
-    McvPagination,
-  },
-  data() {
-    return {
-      total: 500,
-      limit: 10,
-      currentPage: 5,
-      url: '/',
-    };
   },
   computed: {
     ...mapState({
@@ -78,9 +83,38 @@ export default {
       feed: (state) => state.feed.data,
       error: (state) => state.feed.error,
     }),
+    limit() {
+      return limit
+    },
+    currentPage() {
+      return Number(this.$route.query.page || '1');
+    },
+    baseUrl() {
+      return this.$route.path;
+    },
+    offset() {
+      return this.currentPage * limit - limit;
+    },
+  },
+  watch: {
+    currentPage() {
+      this.fetchFeed();
+    },
   },
   mounted() {
-    this.$store.dispatch(actionTypes.getFeed, {apiUrl: this.apiUrl});
+    this.fetchFeed();
+  },
+  methods: {
+    fetchFeed() {
+      const parsedUrl = parseUrl(this.apiUrl);
+      const stringifiedParams = stringify({
+        limit,
+        offset: this.offset,
+        ...parsedUrl.query,
+      });
+      const apiUrlWithParams = `${parsedUrl.url}?${stringifiedParams}`;
+      this.$store.dispatch(actionTypes.getFeed, {apiUrl: apiUrlWithParams});
+    },
   },
 };
 </script>
